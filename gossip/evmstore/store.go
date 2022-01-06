@@ -128,6 +128,7 @@ func (s *Store) RebuildEvmSnapshot(root common.Hash) {
 
 // Commit changes.
 func (s *Store) Commit(block iblockproc.BlockState, flush bool) error {
+	s.Log.Info("Commit changes.", "number", block.LastBlock.Idx, "root", block.FinalizedStateRoot)
 	triedb := s.EvmState.TrieDB()
 	stateRoot := common.Hash(block.FinalizedStateRoot)
 	// If we're applying genesis or running an archive node, always flush
