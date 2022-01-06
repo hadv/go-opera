@@ -168,6 +168,7 @@ func (s *Store) Commit(block iblockproc.BlockState, flush bool) error {
 		s.triegc.Push(stateRoot, -int64(block.LastBlock.Idx))
 
 		if current := uint64(block.LastBlock.Idx); current > TriesInMemory {
+			s.Log.Info("triegc", "empty", s.triegc.Empty(), "size", s.triegc.Size(), "current", current)
 			// If we exceeded our memory allowance, flush matured singleton nodes to disk
 			var (
 				nodes, imgs = triedb.Size()
