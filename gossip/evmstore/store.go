@@ -65,7 +65,7 @@ type Store struct {
 }
 
 const (
-	TriesInMemory = 1
+	TriesInMemory = 32
 )
 
 // NewStore creates store over key-value db.
@@ -132,7 +132,7 @@ func (s *Store) CleanCommit(block iblockproc.BlockState) error {
 	stateRoot := common.Hash(block.FinalizedStateRoot)
 	current := uint64(block.LastBlock.Idx)
 	// Garbage collect all below the current block
-	s.Log.Info("triegc", "empty", s.triegc.Empty(), "size", s.triegc.Size(), "current", current)
+	s.Log.Info("CleanCommit", "empty", s.triegc.Empty(), "size", s.triegc.Size(), "current", current)
 	for !s.triegc.Empty() {
 		root, number := s.triegc.Pop()
 		s.Log.Info("CleanCommit", "root", root, "number", number, "current", current)
@@ -168,7 +168,7 @@ func (s *Store) Commit(block iblockproc.BlockState, flush bool) error {
 		s.triegc.Push(stateRoot, -int64(block.LastBlock.Idx))
 
 		if current := uint64(block.LastBlock.Idx); current > TriesInMemory {
-			s.Log.Info("triegc", "empty", s.triegc.Empty(), "size", s.triegc.Size(), "current", current)
+			s.Log.Info("Commit", "empty", s.triegc.Empty(), "size", s.triegc.Size(), "current", current)
 			// If we exceeded our memory allowance, flush matured singleton nodes to disk
 			var (
 				nodes, imgs = triedb.Size()
