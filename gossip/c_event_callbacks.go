@@ -248,6 +248,7 @@ func (s *Service) mayCommit(epochSealing bool) {
 }
 
 func (s *Service) commit(epochSealing bool) {
+	s.Log.Info("commit", "epochSealing", epochSealing)
 	// s.engineMu is locked here
 	s.blockProcWg.Wait()
 	// TODO: prune old MPTs in beginnings of committed sections
