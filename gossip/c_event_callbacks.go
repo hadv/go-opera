@@ -252,7 +252,9 @@ func (s *Service) commit(epochSealing bool) {
 	s.blockProcWg.Wait()
 	// if gcmode is full and syncmode is snapsync, clean all the old state trie
 	// and commit the state trie at the current block
+	s.Log.Info("TrieDirtyDisabled", "value", s.store.cfg.EVM.Cache.TrieDirtyDisabled)
 	if !s.store.cfg.EVM.Cache.TrieDirtyDisabled {
+		s.Log.Info("cleanCommitEVM")
 		s.store.cleanCommitEVM()
 	}
 	_ = s.store.Commit()

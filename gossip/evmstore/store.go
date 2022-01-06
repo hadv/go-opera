@@ -132,13 +132,15 @@ func (s *Store) CleanCommit(block iblockproc.BlockState) error {
 	stateRoot := common.Hash(block.FinalizedStateRoot)
 	current := uint64(block.LastBlock.Idx)
 	// Garbage collect all below the current block
+	s.Log.Info("triegc", "empty", s.triegc.Empty(), "size", s.triegc.Size(), "current", current)
 	for !s.triegc.Empty() {
 		root, number := s.triegc.Pop()
+		s.Log.Info("CleanCommit", "root", root, "number", number, "current", current)
 		if uint64(-number) >= current {
 			s.triegc.Push(root, number)
 			break
 		}
-		s.Log.Debug("Clean up the state trie", "root", root.(common.Hash))
+		s.Log.Info("Clean up the state trie", "root", root.(common.Hash))
 		triedb.Dereference(root.(common.Hash))
 	}
 	// commit the state trie after clean up
