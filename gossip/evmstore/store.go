@@ -149,8 +149,9 @@ func (s *Store) CleanCommit(block iblockproc.BlockState) error {
 		s.Log.Debug("Clean up the state trie", "root", root.(common.Hash))
 		triedb.Dereference(root.(common.Hash))
 	}
-	// commit the state trie after clean up
-	err := triedb.Commit(stateRoot, false, nil)
+	// commit the state trie after clean up with callback funtion `triedb.MarkCommit`
+	// to mark node as db commited to delete it later by calling `triedb.Dereference()`
+	err := triedb.Commit(stateRoot, false, triedb.MarkCommit)
 	if err != nil {
 		s.Log.Error("Failed to flush trie DB into main DB", "err", err)
 	}
