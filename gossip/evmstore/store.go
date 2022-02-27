@@ -212,9 +212,6 @@ func (s *Store) Flush(block iblockproc.BlockState) {
 				s.Log.Error("Failed to commit recent state trie", "err", err)
 			}
 		}
-		for !s.triegc.Empty() {
-			triedb.Dereference(s.triegc.PopItem().(common.Hash))
-		}
 		if size, _ := triedb.Size(); size != 0 {
 			s.Log.Error("Dangling trie nodes after full cleanup")
 		}
