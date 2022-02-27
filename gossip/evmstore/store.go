@@ -146,7 +146,7 @@ func (s *Store) CleanCommit(block iblockproc.BlockState) error {
 			s.triegc.Push(root, number)
 			break
 		}
-		s.Log.Debug("Clean up the state trie", "root", root.(common.Hash))
+		s.Log.Warn("CleanCommit Clean up the state trie", "root", root.(common.Hash), "number", number)
 		triedb.Dereference(root.(common.Hash))
 	}
 	// commit the state trie after clean up with callback funtion `triedb.MarkCommit`
@@ -193,6 +193,7 @@ func (s *Store) Commit(block iblockproc.BlockState, flush bool) error {
 					s.triegc.Push(root, number)
 					break
 				}
+				s.Log.Warn("Commit Clean up the state trie", "root", root.(common.Hash), "number", number)
 				triedb.Dereference(root.(common.Hash))
 			}
 		}
