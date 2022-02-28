@@ -146,12 +146,12 @@ func (s *Store) CleanCommit(block iblockproc.BlockState) error {
 			s.triegc.Push(root, number)
 			break
 		}
-		s.Log.Warn("CleanCommit Clean up the state trie", "root", root.(common.Hash), "number", number)
+		s.Log.Debug("Clean up the state trie", "root", root.(common.Hash), "number", number)
 		triedb.Dereference(root.(common.Hash))
 	}
 	// commit the state trie after clean up with callback funtion `triedb.MarkCommit`
 	// to mark node as db commited to delete it later by calling `triedb.Dereference()`
-	err := triedb.Commit(stateRoot, false, triedb.MarkCommit)
+	err := triedb.Commit(stateRoot, false, nil)
 	if err != nil {
 		s.Log.Error("Failed to flush trie DB into main DB", "err", err)
 	}
