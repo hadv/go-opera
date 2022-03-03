@@ -151,8 +151,6 @@ func (s *Store) Close() {
 	table.MigrateCaches(&s.cache, setnil)
 
 	_ = s.mainDB.Close()
-	s.async.Close()
-	s.sfcapi.Close()
 	_ = s.closeEpochStore()
 }
 
