@@ -138,24 +138,27 @@ func (s *Store) CleanCommit(block iblockproc.BlockState) error {
 	// due to it already be referenced on `Commit()` function
 	triedb := s.EvmState.TrieDB()
 	stateRoot := common.Hash(block.FinalizedStateRoot)
-	current := uint64(block.LastBlock.Idx)
-	// Garbage collect all below the current block
-	for !s.triegc.Empty() {
-		root, number := s.triegc.Pop()
-		if uint64(-number) >= current {
-			s.triegc.Push(root, number)
-			break
+	if current := uint64(block.LastBlock.Idx); current > TriesInMemory {
+		// Find the next state trie we need to commit
+		chosen := current - TriesInMemory
+
+		// Garbage collect anything below our required write retention
+		for !s.triegc.Empty() {
+			root, number := s.triegc.Pop()
+			if uint64(-number) >= chosen {
+				s.triegc.Push(root, number)
+				break
+			}
+			s.Log.Debug("Clean up the state trie", "root", root.(common.Hash), "number", number)
+			triedb.Dereference(root.(common.Hash))
 		}
-		s.Log.Debug("Clean up the state trie", "root", root.(common.Hash), "number", number)
-		triedb.Dereference(root.(common.Hash))
+		err := triedb.Commit(stateRoot, false, nil)
+		if err != nil {
+			s.Log.Error("Failed to flush trie DB into main DB", "err", err)
+		}
+		return err
 	}
-	// commit the state trie after clean up with callback funtion `triedb.MarkCommit`
-	// to mark node as db commited to delete it later by calling `triedb.Dereference()`
-	err := triedb.Commit(stateRoot, false, nil)
-	if err != nil {
-		s.Log.Error("Failed to flush trie DB into main DB", "err", err)
-	}
-	return err
+	return nil
 }
 
 // Commit changes.
