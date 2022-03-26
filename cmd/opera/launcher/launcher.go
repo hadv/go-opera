@@ -217,6 +217,7 @@ func init() {
 		importCommand,
 		exportCommand,
 		checkCommand,
+		dbCommand,
 		// See snapshot.go
 		snapshotCommand,
 		// See dbcmd.go
