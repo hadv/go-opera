@@ -154,7 +154,7 @@ type config struct {
 	Lachesis      abft.Config
 	LachesisStore abft.StoreConfig
 	VectorClock   vecmt.IndexConfig
-	cachescale    cachescale.Func
+	DBs           integration.DBsConfig
 }
 
 func (c *config) AppConfigs() integration.Configs {
@@ -164,6 +164,7 @@ func (c *config) AppConfigs() integration.Configs {
 		Lachesis:      c.Lachesis,
 		LachesisStore: c.LachesisStore,
 		VectorClock:   c.VectorClock,
+		DBs:           c.DBs,
 	}
 }
 
@@ -375,7 +376,6 @@ func mayMakeAllConfigs(ctx *cli.Context) (*config, error) {
 		Lachesis:      abft.DefaultConfig(),
 		LachesisStore: abft.DefaultStoreConfig(cacheRatio),
 		VectorClock:   vecmt.DefaultConfig(cacheRatio),
-		cachescale:    cacheRatio,
 	}
 
 	if ctx.GlobalIsSet(FakeNetFlag.Name) {
@@ -393,6 +393,14 @@ func mayMakeAllConfigs(ctx *cli.Context) (*config, error) {
 		if err := loadAllConfigs(file, &cfg); err != nil {
 			return &cfg, err
 		}
+	}
+	// apply default for DB config if it wasn't touched by config file
+	dbDefault := integration.DefaultDBsConfig(cacheRatio.U64)
+	if len(cfg.DBs.Routing.Table) == 0 {
+		cfg.DBs.Routing = dbDefault.Routing
+	}
+	if len(cfg.DBs.Cache.Table) == 0 {
+		cfg.DBs.Cache = dbDefault.Cache
 	}
 
 	// Apply flags (high priority)
