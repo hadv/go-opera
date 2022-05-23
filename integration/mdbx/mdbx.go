@@ -230,6 +230,10 @@ func (it *iterator) Release() {
 }
 
 func (it *iterator) accumulate(err error) {
+	// don't accumulate the is not found error
+	if dbx.IsNotFound(err) {
+		return
+	}
 	if it.err == nil {
 		it.err = err
 	} else {
