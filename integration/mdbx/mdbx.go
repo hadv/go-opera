@@ -117,7 +117,7 @@ func (db *Database) Get(key []byte) ([]byte, error) {
 // Put inserts the given value into the key-value store.
 func (db *Database) Put(key []byte, value []byte) error {
 	if err := db.env.Update(func(txn *dbx.Txn) (err error) {
-		dbi, err := txn.OpenRoot(0)
+		dbi, err := txn.OpenRoot(dbx.Create)
 		if err != nil {
 			return err
 		}
@@ -136,7 +136,7 @@ func (db *Database) Put(key []byte, value []byte) error {
 // Delete removes the key from the key-value store.
 func (db *Database) Delete(key []byte) error {
 	if err := db.env.Update(func(txn *dbx.Txn) (err error) {
-		dbi, err := txn.OpenRoot(0)
+		dbi, err := txn.OpenRoot(dbx.Create)
 		if err != nil {
 			return err
 		}
