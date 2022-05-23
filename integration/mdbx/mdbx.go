@@ -189,26 +189,27 @@ func (db *Database) NewIterator(prefix []byte, start []byte) kvdb.Iterator {
 		return nil
 	}
 	cur.Get(start, nil, dbx.SetRange)
-	iter := iterator{cur}
+	iter := iterator{cur, nil}
 	return &iter
 
 }
 
 func (it *iterator) Next() bool {
 	if _, _, err := it.Get(nil, nil, dbx.Next); err != nil {
+		it.accumulate(err)
 		return false
 	}
 	return true
 }
 
-// TODO: any way to accumulate mdbx cursor error?
 func (it *iterator) Error() error {
-	return nil
+	return it.err
 }
 
 func (it *iterator) Key() []byte {
 	key, _, err := it.Get(nil, nil, dbx.Current)
 	if err != nil {
+		it.accumulate(err)
 		return nil
 	}
 	return key
@@ -217,6 +218,7 @@ func (it *iterator) Key() []byte {
 func (it *iterator) Value() []byte {
 	_, val, err := it.Get(nil, nil, dbx.Current)
 	if err != nil {
+		it.accumulate(err)
 		return nil
 	}
 	return val
@@ -224,8 +226,18 @@ func (it *iterator) Value() []byte {
 
 func (it *iterator) Release() {
 	it.Close()
+	it.err = nil
+}
+
+func (it *iterator) accumulate(err error) {
+	if it.err == nil {
+		it.err = err
+	} else {
+		it.err = fmt.Errorf("%w "+err.Error(), it.err)
+	}
 }
 
 type iterator struct {
 	*dbx.Cursor
+	err error
 }
