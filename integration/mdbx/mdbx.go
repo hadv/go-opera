@@ -114,15 +114,18 @@ func (db *Database) Get(key []byte) ([]byte, error) {
 	return val, nil
 }
 
-// Put inserts the given value into the key-value store.
+// Put inserts/updates the given value into the key-value store.
 func (db *Database) Put(key []byte, value []byte) error {
 	if err := db.env.Update(func(txn *dbx.Txn) (err error) {
 		dbi, err := txn.OpenRoot(dbx.Create)
 		if err != nil {
 			return err
 		}
-
-		err = txn.Put(dbi, key, value, dbx.NoOverwrite)
+		cur, err := txn.OpenCursor(dbi)
+		if err != nil {
+			return fmt.Errorf("cannot open cursor for update: %v", err)
+		}
+		err = cur.Put(key, value, dbx.Upsert)
 		if err != nil {
 			return fmt.Errorf("put: %v", err)
 		}
