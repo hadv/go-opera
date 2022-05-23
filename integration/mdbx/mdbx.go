@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/Fantom-foundation/lachesis-base/kvdb"
 	"github.com/ethereum/go-ethereum/log"
 	dbx "github.com/torquem-ch/mdbx-go/mdbx"
 )
@@ -166,4 +167,65 @@ func (db *Database) Stat(property string) (string, error) {
 // Path returns the path to the database directory.
 func (db *Database) Path() string {
 	return db.fn
+}
+
+// NewIterator creates a binary-alphabetical iterator over a subset
+// of database content with a particular key prefix, starting at a particular
+// initial key (or after, if it does not exist).
+// TODO: able to set key prefix for mdbx cursor or not
+func (db *Database) NewIterator(prefix []byte, start []byte) kvdb.Iterator {
+	var cur *dbx.Cursor
+	if err := db.env.View(func(txn *dbx.Txn) error {
+		dbi, err := txn.OpenRoot(0)
+		if err != nil {
+			return err
+		}
+		cur, err = txn.OpenCursor(dbi)
+		if err != nil {
+			return nil
+		}
+		return nil
+	}); err != nil {
+		return nil
+	}
+	cur.Get(start, nil, dbx.SetRange)
+	iter := iterator{cur}
+	return &iter
+
+}
+
+func (it *iterator) Next() bool {
+	if _, _, err := it.Get(nil, nil, dbx.Next); err != nil {
+		return false
+	}
+	return true
+}
+
+// TODO: any way to accumulate mdbx cursor error?
+func (it *iterator) Error() error {
+	return nil
+}
+
+func (it *iterator) Key() []byte {
+	key, _, err := it.Get(nil, nil, dbx.Current)
+	if err != nil {
+		return nil
+	}
+	return key
+}
+
+func (it *iterator) Value() []byte {
+	_, val, err := it.Get(nil, nil, dbx.Current)
+	if err != nil {
+		return nil
+	}
+	return val
+}
+
+func (it *iterator) Release() {
+	it.Close()
+}
+
+type iterator struct {
+	*dbx.Cursor
 }
