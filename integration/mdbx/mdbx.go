@@ -207,7 +207,7 @@ func (it *iterator) Error() error {
 }
 
 func (it *iterator) Key() []byte {
-	key, _, err := it.Get(nil, nil, dbx.Current)
+	key, _, err := it.Get(nil, nil, dbx.GetCurrent)
 	if err != nil {
 		it.accumulate(err)
 		return nil
@@ -216,7 +216,7 @@ func (it *iterator) Key() []byte {
 }
 
 func (it *iterator) Value() []byte {
-	_, val, err := it.Get(nil, nil, dbx.Current)
+	_, val, err := it.Get(nil, nil, dbx.GetCurrent)
 	if err != nil {
 		it.accumulate(err)
 		return nil
