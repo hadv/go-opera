@@ -156,12 +156,18 @@ func (db *Database) Delete(key []byte) error {
 	return nil
 }
 
+// Stat returns a particular internal stat of the database.
 func (db *Database) Stat(property string) (string, error) {
 	stat, err := db.env.Stat()
 	if err != nil {
 		return "", err
 	}
 	return fmt.Sprintf("%#v", stat), nil
+}
+
+// Compact mdbx itself was already compact db then don't need to do any more compacting
+func (db *Database) Compact(start []byte, limit []byte) error {
+	return nil
 }
 
 // Path returns the path to the database directory.
