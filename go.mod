@@ -4,7 +4,9 @@ go 1.14
 
 require (
 	github.com/Fantom-foundation/lachesis-base v0.0.0-20220103160934-6b4931c60582
+	github.com/VictoriaMetrics/metrics v1.18.1 // indirect
 	github.com/allegro/bigcache v1.2.1 // indirect
+	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b // indirect
 	github.com/certifi/gocertifi v0.0.0-20191021191039-0944d244cd40 // indirect
 	github.com/cespare/cp v1.1.1
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
@@ -18,6 +20,7 @@ require (
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08 // indirect
 	github.com/getsentry/raven-go v0.2.0 // indirect
 	github.com/go-kit/kit v0.9.0 // indirect
+	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/golang/mock v1.3.1
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/holiman/bloomfilter/v2 v2.0.3
