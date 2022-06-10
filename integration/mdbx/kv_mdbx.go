@@ -26,7 +26,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Fantom-foundation/go-opera/kv"
+	"github.com/Fantom-foundation/go-opera/integration/kv"
 	"github.com/c2h5oh/datasize"
 	"github.com/ethereum/go-ethereum/log"
 	stack2 "github.com/go-stack/stack"

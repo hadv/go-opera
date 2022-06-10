@@ -8,6 +8,7 @@ import (
 	"github.com/Fantom-foundation/go-opera/integration/kv"
 	"github.com/Fantom-foundation/lachesis-base/kvdb"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/google/btree"
 	dbx "github.com/torquem-ch/mdbx-go/mdbx"
 )
 
@@ -138,6 +139,66 @@ func (db *Database) Compact(start []byte, limit []byte) error {
 // Path returns the path to the database directory.
 func (db *Database) Path() string {
 	return db.fn
+}
+
+// NewBatch creates a write-only key-value store that buffers changes to its host
+// database until a final write is called.
+func (db *Database) NewBatch() kvdb.Batch {
+	tx, err := db.db.BeginRw(context.Background())
+	if err != nil {
+		return nil
+	}
+	return &batch{
+		kv.NewBatch(tx, nil),
+	}
+}
+
+// batch is a write-only leveldb batch that commits changes to its host database
+// when Write is called. A batch cannot be used concurrently.
+type batch struct {
+	*kv.Batch
+}
+
+// Put inserts the given value into the batch for later committing.
+func (b *batch) Put(key, value []byte) error {
+	return b.Put(key, value)
+}
+
+// Delete inserts the key removal into the batch for later committing.
+func (b *batch) Delete(key []byte) error {
+	return b.Delete(key)
+}
+
+// ValueSize retrieves the amount of data queued up for writing.
+func (b *batch) ValueSize() int {
+	return b.BatchSize()
+}
+
+// Write flushes any accumulated data to disk.
+func (b *batch) Write() error {
+	return b.Commit()
+}
+
+// Reset resets the batch for reuse.
+func (b *batch) Reset() {
+	b.Close()
+}
+
+// Replay replays the batch contents.
+func (b *batch) Replay(w kvdb.Writer) (err error) {
+	b.Iterator().Ascend(func(i btree.Item) bool {
+		mi := i.(*kv.Item)
+		if len(mi.Value()) == 0 {
+			err = w.Delete(mi.Key())
+		} else {
+			err = w.Put(mi.Key(), mi.Value())
+		}
+		if err != nil {
+			return false
+		}
+		return true
+	})
+	return err
 }
 
 // NewIterator creates a binary-alphabetical iterator over a subset
