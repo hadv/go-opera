@@ -4,12 +4,9 @@ import (
 	"os"
 	"path"
 	"strings"
-	"time"
 
-	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/Fantom-foundation/lachesis-base/kvdb"
 	"github.com/Fantom-foundation/lachesis-base/kvdb/cachedproducer"
-	"github.com/Fantom-foundation/lachesis-base/kvdb/flushable"
 	"github.com/Fantom-foundation/lachesis-base/kvdb/multidb"
 	"github.com/Fantom-foundation/lachesis-base/kvdb/table"
 	"github.com/ethereum/go-ethereum/log"
@@ -382,25 +379,4 @@ func separateIntoDBs(byReq map[string]dbMigrationEntry) map[multidb.DBLocator]ma
 		byDB[dbLocatorOf(e.New)][e.Req] = e
 	}
 	return byDB
-}
-
-// clearDirtyFlags - writes the CleanPrefix into all databases
-func clearDirtyFlags(rawProducer kvdb.IterableDBProducer) error {
-	id := bigendian.Uint64ToBytes(uint64(time.Now().UnixNano()))
-	names := rawProducer.Names()
-	for _, name := range names {
-		db, err := rawProducer.OpenDB(name)
-		if err != nil {
-			return err
-		}
-
-		err = db.Put(integration.FlushIDKey, append([]byte{flushable.CleanPrefix}, id...))
-		if err != nil {
-			log.Crit("Failed to write CleanPrefix", "name", name)
-			return err
-		}
-		log.Info("Database set clean", "name", name)
-		_ = db.Close()
-	}
-	return nil
 }
