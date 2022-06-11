@@ -10,6 +10,7 @@ import (
 	"github.com/Fantom-foundation/lachesis-base/kvdb"
 	"github.com/Fantom-foundation/lachesis-base/kvdb/leveldb"
 	"github.com/Fantom-foundation/lachesis-base/kvdb/multidb"
+	"github.com/Fantom-foundation/lachesis-base/kvdb/pebble"
 	"github.com/Fantom-foundation/lachesis-base/utils/fmtfilter"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 
@@ -74,6 +75,7 @@ func SupportedDBs(chaindataDir string, cfg DBsCacheConfig) (map[multidb.TypeName
 	}
 	return map[multidb.TypeName]kvdb.IterableDBProducer{
 		"leveldb": leveldb.NewProducer(path.Join(chaindataDir, "leveldb"), cacher),
+		"pebble":  pebble.NewProducer(path.Join(chaindataDir, "pebble"), cacher),
 	}, nil
 }
 

@@ -288,8 +288,11 @@ func makeNode(ctx *cli.Context, cfg *config, genesisStore *genesisstore.Store) (
 	errlock.Check()
 
 	chaindataDir := path.Join(cfg.Node.DataDir, "chaindata")
-	if err := os.MkdirAll(chaindataDir, 0700); err != nil {
-		utils.Fatalf("Failed to create chaindata directory: %v", err)
+	if err := os.MkdirAll(path.Join(chaindataDir, "leveldb"), 0700); err != nil {
+		utils.Fatalf("Failed to create chaindata/leveldb directory: %v", err)
+	}
+	if err := os.MkdirAll(path.Join(chaindataDir, "pebble"), 0700); err != nil {
+		utils.Fatalf("Failed to create chaindata/pebble directory: %v", err)
 	}
 	var g *genesis.Genesis
 	if genesisStore != nil {
