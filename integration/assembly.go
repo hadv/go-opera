@@ -128,6 +128,9 @@ func makeEngine(rawProducers map[multidb.TypeName]kvdb.IterableDBProducer, g *ge
 		}
 		// open raw DBs for performance reasons
 		dbs, err := MakeRawMultiProducer(rawProducers, cfg.DBs.Routing)
+		if err != nil {
+			return nil, nil, nil, nil, gossip.BlockProc{}, fmt.Errorf("failed to make DB multi-producer: %v", err)
+		}
 
 		err = applyGenesis(dbs, *g, cfg)
 		if err != nil {

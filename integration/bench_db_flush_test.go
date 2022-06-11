@@ -3,16 +3,16 @@ package integration
 import (
 	"io/ioutil"
 	"os"
+	"path"
 	"testing"
 
 	"github.com/Fantom-foundation/lachesis-base/abft"
 	"github.com/Fantom-foundation/lachesis-base/hash"
 	"github.com/Fantom-foundation/lachesis-base/inter/idx"
 	"github.com/Fantom-foundation/lachesis-base/kvdb"
-	"github.com/Fantom-foundation/lachesis-base/kvdb/leveldb"
+	"github.com/Fantom-foundation/lachesis-base/kvdb/multidb"
 	"github.com/Fantom-foundation/lachesis-base/utils/cachescale"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/syndtr/goleveldb/leveldb/opt"
 
 	"github.com/Fantom-foundation/go-opera/gossip"
 	"github.com/Fantom-foundation/go-opera/integration/makefakegenesis"
@@ -32,6 +32,7 @@ func BenchmarkFlushDBs(b *testing.B) {
 		Lachesis:      abft.DefaultConfig(),
 		LachesisStore: abft.DefaultStoreConfig(cachescale.Identity),
 		VectorClock:   vecmt.DefaultConfig(cachescale.Identity),
+		DBs:           DefaultDBsConfig(cachescale.Identity.U64, 512),
 	})
 	defer store.Close()
 	defer s2.Close()
@@ -65,14 +66,20 @@ func BenchmarkFlushDBs(b *testing.B) {
 	}
 }
 
-func cache64mb(string) int {
-	return 64 * opt.MiB
-}
-
-func dbProducer(name string) (kvdb.IterableDBProducer, string) {
+func dbProducer(name string) (map[multidb.TypeName]kvdb.IterableDBProducer, string) {
 	dir, err := ioutil.TempDir("", name)
 	if err != nil {
 		panic(err)
 	}
-	return leveldb.NewProducer(dir, cache64mb), dir
+	if err := os.MkdirAll(path.Join(dir, "leveldb"), 0700); err != nil {
+		panic(err)
+	}
+	if err := os.MkdirAll(path.Join(dir, "pebble"), 0700); err != nil {
+		panic(err)
+	}
+	dbs, err := SupportedDBs(dir, DefaultDBsCacheConfig(cachescale.Identity.U64, 512))
+	if err != nil {
+		panic(err)
+	}
+	return dbs, dir
 }
