@@ -395,7 +395,7 @@ func mayMakeAllConfigs(ctx *cli.Context) (*config, error) {
 		}
 	}
 	// apply default for DB config if it wasn't touched by config file
-	dbDefault := integration.DefaultDBsConfig(cacheRatio.U64)
+	dbDefault := integration.DefaultDBsConfig(cacheRatio.U64, uint64(utils.MakeDatabaseHandles()))
 	if len(cfg.DBs.Routing.Table) == 0 {
 		cfg.DBs.Routing = dbDefault.Routing
 	}

@@ -7,7 +7,6 @@ require (
 	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/certifi/gocertifi v0.0.0-20191021191039-0944d244cd40 // indirect
 	github.com/cespare/cp v1.1.1
-	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v1.7.1
 	github.com/docker/docker v1.13.1
@@ -44,7 +43,7 @@ require (
 	gopkg.in/urfave/cli.v1 v1.20.0
 )
 
-replace github.com/Fantom-foundation/lachesis-base => github.com/uprendis/lachesis-base v0.0.0-20220326204821-eda627f27169
+replace github.com/Fantom-foundation/lachesis-base => github.com/uprendis/lachesis-base v0.0.0-20220611045340-df23f23f9377
 
 replace github.com/ethereum/go-ethereum => github.com/Fantom-foundation/go-ethereum v1.10.8-ftm-rc5
 

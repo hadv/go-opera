@@ -18,37 +18,57 @@ import (
 
 type DBsConfig struct {
 	Routing RoutingConfig
-	Cache   DBCacheConfig
+	Cache   DBsCacheConfig
 }
 
 type DBCacheConfig struct {
-	Table map[string]uint64
+	Cache   uint64
+	Fdlimit uint64
 }
 
-func DefaultDBsConfig(scale func(uint64) uint64) DBsConfig {
+type DBsCacheConfig struct {
+	Table map[string]DBCacheConfig
+}
+
+func DefaultDBsConfig(scale func(uint64) uint64, fdlimit uint64) DBsConfig {
 	return DBsConfig{
 		Routing: DefaultRoutingConfig(),
-		Cache:   DefaultDBsCacheConfig(scale),
+		Cache:   DefaultDBsCacheConfig(scale, fdlimit),
 	}
 }
 
-func DefaultDBsCacheConfig(scale func(uint64) uint64) DBCacheConfig {
-	return DBCacheConfig{
-		Table: map[string]uint64{
-			"gossip":      scale(128 * opt.MiB),
-			"lachesis":    scale(4 * opt.MiB),
-			"lachesis-%d": scale(8 * opt.MiB),
-			"gossip-%d":   scale(8 * opt.MiB),
-			"":            scale(2 * opt.MiB),
+func DefaultDBsCacheConfig(scale func(uint64) uint64, fdlimit uint64) DBsCacheConfig {
+	return DBsCacheConfig{
+		Table: map[string]DBCacheConfig{
+			"gossip": {
+				Cache:   scale(128 * opt.MiB),
+				Fdlimit: fdlimit*128/148 + 1,
+			},
+			"lachesis": {
+				Cache:   scale(4 * opt.MiB),
+				Fdlimit: fdlimit*4/148 + 1,
+			},
+			"lachesis-%d": {
+				Cache:   scale(8 * opt.MiB),
+				Fdlimit: fdlimit*8/148 + 1,
+			},
+			"gossip-%d": {
+				Cache:   scale(8 * opt.MiB),
+				Fdlimit: fdlimit*8/148 + 1,
+			},
+			"": {
+				Cache:   opt.MiB,
+				Fdlimit: 16,
+			},
 		},
 	}
 }
 
-func SupportedDBs(chaindataDir string, cfg DBCacheConfig) (map[multidb.TypeName]kvdb.IterableDBProducer, error) {
+func SupportedDBs(chaindataDir string, cfg DBsCacheConfig) (map[multidb.TypeName]kvdb.IterableDBProducer, error) {
 	if chaindataDir == "inmemory" || chaindataDir == "" {
 		chaindataDir, _ = ioutil.TempDir("", "opera-tmp")
 	}
-	cacher, err := dbCacheSize(cfg)
+	cacher, err := dbCacheFdlimit(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -57,10 +77,10 @@ func SupportedDBs(chaindataDir string, cfg DBCacheConfig) (map[multidb.TypeName]
 	}, nil
 }
 
-func dbCacheSize(cfg DBCacheConfig) (func(string) int, error) {
+func dbCacheFdlimit(cfg DBsCacheConfig) (func(string) (int, int), error) {
 	fmts := make([]func(req string) (string, error), 0, len(cfg.Table))
-	fmtsCaches := make([]int, 0, len(cfg.Table))
-	exactTable := make(map[string]uint64, len(cfg.Table))
+	fmtsCaches := make([]DBCacheConfig, 0, len(cfg.Table))
+	exactTable := make(map[string]DBCacheConfig, len(cfg.Table))
 	// build scanf filters
 	for name, cache := range cfg.Table {
 		if !strings.ContainsRune(name, '%') {
@@ -71,22 +91,22 @@ func dbCacheSize(cfg DBCacheConfig) (func(string) int, error) {
 				return nil, err
 			}
 			fmts = append(fmts, fn)
-			fmtsCaches = append(fmtsCaches, int(cache))
+			fmtsCaches = append(fmtsCaches, cache)
 		}
 	}
-	return func(name string) int {
+	return func(name string) (int, int) {
 		// try exact match
 		if cache, ok := cfg.Table[name]; ok {
-			return int(cache)
+			return int(cache.Cache), int(cache.Fdlimit)
 		}
 		// try regexp
 		for i, fn := range fmts {
 			if _, err := fn(name); err == nil {
-				return fmtsCaches[i]
+				return int(fmtsCaches[i].Cache), int(fmtsCaches[i].Fdlimit)
 			}
 		}
 		// default
-		return int(cfg.Table[""])
+		return int(cfg.Table[""].Cache), int(cfg.Table[""].Fdlimit)
 	}, nil
 }
 
