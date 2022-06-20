@@ -82,15 +82,15 @@ func (ds *StoreWithMetrics) meter(refresh time.Duration) {
 			merr = err
 			continue
 		}
-		var nDiskSize float64
-		if n, err := fmt.Sscanf(diskSize, "Size(MB):%f", &nDiskSize); n != 1 || err != nil {
+		var nDiskSize int64
+		if n, err := fmt.Sscanf(diskSize, "Size(B):%d", &nDiskSize); n != 1 || err != nil {
 			ds.log.Error("Bad syntax of disk size entry", "size", diskSize)
 			merr = err
 			continue
 		}
 		// Update all the disk size meters
 		if ds.diskSizeGauge != nil {
-			ds.diskSizeGauge.Update(int64(nDiskSize * 1024 * 1024))
+			ds.diskSizeGauge.Update(nDiskSize)
 		}
 
 		// Retrieve the database iostats.
