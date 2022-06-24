@@ -18,7 +18,7 @@ func DefaultRoutingConfig() RoutingConfig {
 	return RoutingConfig{
 		Table: map[string]multidb.Route{
 			"": {
-				Type: "leveldb",
+				Type: "pebble",
 			},
 		},
 	}
