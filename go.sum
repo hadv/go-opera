@@ -278,8 +278,8 @@ github.com/graph-gophers/graphql-go v0.0.0-20201113091052-beb923fada29 h1:sezaKh
 github.com/graph-gophers/graphql-go v0.0.0-20201113091052-beb923fada29/go.mod h1:9CQHMSxwO4MprSdzoIEobiHpoLtHm77vfxsvsIN5Vuc=
 github.com/guzenok/go-fuzz v0.0.0-20210103140116-f9104dfb626f h1:GQpcb9ywkaawJfZCFeIcrSWlsZFRTsig42e03dkzc+I=
 github.com/guzenok/go-fuzz v0.0.0-20210103140116-f9104dfb626f/go.mod h1:Q5On640X2Z0YzKOijx9GVhUu/kvHnk9aKoWGMlRDMtc=
-github.com/hadv/lachesis-base v0.0.0-20220623113301-f536af852f71 h1:etQ+i/nYATs2NvMaOjZPPn/OFlIlm7S4aFtSnCbZE+I=
-github.com/hadv/lachesis-base v0.0.0-20220623113301-f536af852f71/go.mod h1:CFMonaK1v/QHwpjLszuycFDgLXNazZqZxciwhKwXDVQ=
+github.com/hadv/lachesis-base v0.0.0-20220624074132-94c9100cc316 h1:uWvqSsCpj5O1SRR+vT4Gr/xEWo/hjEHb4NfmK0tO6wg=
+github.com/hadv/lachesis-base v0.0.0-20220624074132-94c9100cc316/go.mod h1:CFMonaK1v/QHwpjLszuycFDgLXNazZqZxciwhKwXDVQ=
 github.com/hashicorp/go-version v1.2.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/hashicorp/golang-lru v0.5.0/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
 github.com/hashicorp/golang-lru v0.5.1/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=

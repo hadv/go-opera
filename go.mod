@@ -43,7 +43,7 @@ require (
 	gopkg.in/urfave/cli.v1 v1.20.0
 )
 
-replace github.com/Fantom-foundation/lachesis-base => github.com/hadv/lachesis-base v0.0.0-20220623113301-f536af852f71
+replace github.com/Fantom-foundation/lachesis-base => github.com/hadv/lachesis-base v0.0.0-20220624074132-94c9100cc316
 
 replace github.com/ethereum/go-ethereum => github.com/Fantom-foundation/go-ethereum v1.10.8-ftm-rc5
 
