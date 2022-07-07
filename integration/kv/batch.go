@@ -93,7 +93,7 @@ func (b *Batch) doCommit(tx RwTx) error {
 	b.puts.Ascend(func(i btree.Item) bool {
 		mi := i.(*Item)
 		if c != nil {
-			c.Close()
+			c.Release()
 		}
 		var err error
 		c, err = tx.RwCursor("")

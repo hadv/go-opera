@@ -292,7 +292,7 @@ type Cursor interface {
 
 	Count() (uint64, error) // Count - fast way to calculate amount of keys in bucket. It counts all keys even if Prefix was set.
 
-	Close()
+	Release()
 }
 
 type RwCursor interface {

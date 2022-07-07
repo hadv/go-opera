@@ -2,6 +2,7 @@ package mdbx
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -12,9 +13,17 @@ import (
 	dbx "github.com/torquem-ch/mdbx-go/mdbx"
 )
 
+// Common errors.
+var (
+	ErrReadOnly         = errors.New("leveldb: read-only mode")
+	ErrSnapshotReleased = errors.New("leveldb: snapshot released")
+	ErrIterReleased     = errors.New("leveldb: iterator released")
+	ErrClosed           = errors.New("leveldb: closed")
+)
+
 type Database struct {
 	fn string // filename for reporting
-	db kv.RwDB
+	db *MdbxKV
 
 	quitLock sync.Mutex // Mutex protecting the quit channel access
 
@@ -34,7 +43,7 @@ func New(path string, close func() error, drop func()) (*Database, error) {
 	// Assemble the wrapper with all the registered metrics
 	ldb := Database{
 		fn:      path,
-		db:      db,
+		db:      db.(*MdbxKV),
 		onClose: close,
 		onDrop:  drop,
 	}
@@ -201,6 +210,59 @@ func (b *batch) Replay(w kvdb.Writer) (err error) {
 	return err
 }
 
+// Snapshot is a DB snapshot.
+type Snapshot struct {
+	snap *MbdxSnapshot
+}
+
+func (s *Snapshot) String() string {
+	return s.snap.String()
+}
+
+// Get retrieves the given key if it's present in the key-value store.
+func (s *Snapshot) Get(key []byte) (value []byte, err error) {
+	dat, err := s.snap.Get(key)
+	if err != nil {
+		return nil, nil
+	}
+	return dat, err
+}
+
+// Has retrieves if a key is present in the key-value store.
+func (s *Snapshot) Has(key []byte) (ret bool, err error) {
+	dat, err := s.snap.Has(key)
+	if err != nil {
+		return false, nil
+	}
+	return dat, err
+}
+
+// NewIterator creates a binary-alphabetical iterator over a subset
+// of database content with a particular key prefix, starting at a particular
+// initial key (or after, if it does not exist).
+func (s *Snapshot) NewIterator(prefix []byte, start []byte) kvdb.Iterator {
+	return s.snap.NewIterator(prefix, start)
+}
+
+// Release releases the snapshot. This will not release any returned
+// iterators, the iterators would still be valid until released or the
+// underlying DB is closed.
+//
+// Other methods should not be called after the snapshot has been released.
+func (s *Snapshot) Release() {
+	s.snap.Release()
+}
+
+// GetSnapshot returns a latest snapshot of the underlying DB. A snapshot
+// is a frozen snapshot of a DB state at a particular point in time. The
+// content of snapshot are guaranteed to be consistent.
+//
+// The snapshot must be released after use, by calling Release method.
+func (db *Database) GetSnapshot() (kvdb.Snapshot, error) {
+	snap := db.db.newSnapshot()
+	return &Snapshot{snap}, nil
+}
+
 // NewIterator creates a binary-alphabetical iterator over a subset
 // of database content with a particular key prefix, starting at a particular
 // initial key (or after, if it does not exist).
@@ -252,7 +314,7 @@ func (it *iterator) Value() []byte {
 }
 
 func (it *iterator) Release() {
-	it.Cursor.Close()
+	it.Cursor.Release()
 	it.tx.Rollback()
 	it.err = nil
 }

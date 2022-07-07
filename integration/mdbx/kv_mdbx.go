@@ -15,6 +15,7 @@ package mdbx
 
 import (
 	"bytes"
+	"container/list"
 	"context"
 	"encoding/binary"
 	"fmt"
@@ -24,6 +25,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Fantom-foundation/go-opera/integration/kv"
@@ -31,7 +33,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	stack2 "github.com/go-stack/stack"
 	"github.com/torquem-ch/mdbx-go/mdbx"
-	"go.uber.org/atomic"
+	ua "go.uber.org/atomic"
 )
 
 const NonExistingDBI kv.DBI = 999_999_999
@@ -315,6 +317,12 @@ func (opts MdbxOpts) MustOpen() kv.RwDB {
 }
 
 type MdbxKV struct {
+	// Need 64-bit alignment.
+	seq uint64
+
+	// Stats. Need 64-bit alignment.
+	aliveSnaps int32
+
 	env          *mdbx.Env
 	log          log.Logger
 	wg           *sync.WaitGroup
@@ -322,7 +330,12 @@ type MdbxKV struct {
 	opts         MdbxOpts
 	txSize       uint64
 	roTxsLimiter chan struct{} // does limit amount of concurrent Ro transactions - in most casess runtime.NumCPU() is good value for this channel capacity - this channel can be shared with other components (like Decompressor)
-	closed       atomic.Bool
+
+	// Snapshot.
+	snapsMu   sync.Mutex
+	snapsList *list.List
+
+	closed ua.Bool
 }
 
 // openDBIs - first trying to open existing DBI's in RO transaction
@@ -359,6 +372,57 @@ func (db *MdbxKV) openDBIs(buckets []string) error {
 		}
 	}
 	return nil
+}
+
+// Creates new snapshot object.
+func (db *MdbxKV) newSnapshot() *MbdxSnapshot {
+	snap := &MbdxSnapshot{
+		db:   db,
+		elem: db.acquireSnapshot(),
+	}
+	atomic.AddInt32(&db.aliveSnaps, 1)
+	runtime.SetFinalizer(snap, (*MbdxSnapshot).Release)
+	return snap
+}
+
+// Acquires a snapshot, based on latest sequence.
+func (db *MdbxKV) acquireSnapshot() *snapshotElement {
+	db.snapsMu.Lock()
+	defer db.snapsMu.Unlock()
+
+	seq := db.getSeq()
+
+	if e := db.snapsList.Back(); e != nil {
+		se := e.Value.(*snapshotElement)
+		if se.seq == seq {
+			se.ref++
+			return se
+		} else if seq < se.seq {
+			panic("mdbx: sequence number is not increasing")
+		}
+	}
+	se := &snapshotElement{seq: seq, ref: 1}
+	se.e = db.snapsList.PushBack(se)
+	return se
+}
+
+// Releases given snapshot element.
+func (db *MdbxKV) releaseSnapshot(se *snapshotElement) {
+	db.snapsMu.Lock()
+	defer db.snapsMu.Unlock()
+
+	se.ref--
+	if se.ref == 0 {
+		db.snapsList.Remove(se.e)
+		se.e = nil
+	} else if se.ref < 0 {
+		panic("mdbx: Snapshot: negative element reference")
+	}
+}
+
+// Get latest sequence number.
+func (db *MdbxKV) getSeq() uint64 {
+	return atomic.LoadUint64(&db.seq)
 }
 
 // Close closes db
@@ -469,7 +533,7 @@ func (tx *MdbxTx) ForEach(bucket string, fromPrefix []byte, walker func(k, v []b
 	if err != nil {
 		return err
 	}
-	defer c.Close()
+	defer c.Release()
 
 	for k, v, err := c.Seek(fromPrefix); k != nil; k, v, err = c.Next() {
 		if err != nil {
@@ -487,7 +551,7 @@ func (tx *MdbxTx) ForPrefix(bucket string, prefix []byte, walker func(k, v []byt
 	if err != nil {
 		return err
 	}
-	defer c.Close()
+	defer c.Release()
 
 	for k, v, err := c.Seek(prefix); k != nil; k, v, err = c.Next() {
 		if err != nil {
@@ -510,7 +574,7 @@ func (tx *MdbxTx) ForAmount(bucket string, fromPrefix []byte, amount uint32, wal
 	if err != nil {
 		return err
 	}
-	defer c.Close()
+	defer c.Release()
 
 	for k, v, err := c.Seek(fromPrefix); k != nil && amount > 0; k, v, err = c.Next() {
 		if err != nil {
@@ -1456,7 +1520,7 @@ func (c *MdbxCursor) Append(k []byte, v []byte) error {
 	return nil
 }
 
-func (c *MdbxCursor) Close() {
+func (c *MdbxCursor) Release() {
 	if c.c != nil {
 		c.c.Close()
 		delete(c.tx.cursors, c.id)
