@@ -261,41 +261,41 @@ func (opts MdbxOpts) Open() (kv.RwDB, error) {
 		roTxsLimiter: opts.roTxsLimiter,
 	}
 
-	customBuckets := opts.bucketsCfg(kv.ChaindataTablesCfg)
-	for name, cfg := range customBuckets { // copy map to avoid changing global variable
-		db.buckets[name] = cfg
-	}
+	// customBuckets := opts.bucketsCfg(kv.ChaindataTablesCfg)
+	// for name, cfg := range customBuckets { // copy map to avoid changing global variable
+	// 	db.buckets[name] = cfg
+	// }
 
-	buckets := bucketSlice(db.buckets)
-	if err := db.openDBIs(buckets); err != nil {
-		return nil, err
-	}
+	// buckets := bucketSlice(db.buckets)
+	// if err := db.openDBIs(buckets); err != nil {
+	// 	return nil, err
+	// }
 
 	// Configure buckets and open deprecated buckets
-	if err := env.View(func(tx *mdbx.Txn) error {
-		for _, name := range buckets {
-			// Open deprecated buckets if they exist, don't create
-			if !db.buckets[name].IsDeprecated {
-				continue
-			}
-			cnfCopy := db.buckets[name]
-			dbi, createErr := tx.OpenDBI(name, mdbx.DBAccede, nil, nil)
-			if createErr != nil {
-				if mdbx.IsNotFound(createErr) {
-					cnfCopy.DBI = NonExistingDBI
-					db.buckets[name] = cnfCopy
-					continue // if deprecated bucket couldn't be open - then it's deleted and it's fine
-				} else {
-					return fmt.Errorf("bucket: %s, %w", name, createErr)
-				}
-			}
-			cnfCopy.DBI = kv.DBI(dbi)
-			db.buckets[name] = cnfCopy
-		}
-		return nil
-	}); err != nil {
-		return nil, err
-	}
+	// if err := env.View(func(tx *mdbx.Txn) error {
+	// 	for _, name := range buckets {
+	// 		// Open deprecated buckets if they exist, don't create
+	// 		if !db.buckets[name].IsDeprecated {
+	// 			continue
+	// 		}
+	// 		cnfCopy := db.buckets[name]
+	// 		dbi, createErr := tx.OpenDBI(name, mdbx.DBAccede, nil, nil)
+	// 		if createErr != nil {
+	// 			if mdbx.IsNotFound(createErr) {
+	// 				cnfCopy.DBI = NonExistingDBI
+	// 				db.buckets[name] = cnfCopy
+	// 				continue // if deprecated bucket couldn't be open - then it's deleted and it's fine
+	// 			} else {
+	// 				return fmt.Errorf("bucket: %s, %w", name, createErr)
+	// 			}
+	// 		}
+	// 		cnfCopy.DBI = kv.DBI(dbi)
+	// 		db.buckets[name] = cnfCopy
+	// 	}
+	// 	return nil
+	// }); err != nil {
+	// 	return nil, err
+	// }
 
 	if !opts.inMem {
 		if staleReaders, err := db.env.ReaderCheck(); err != nil {
