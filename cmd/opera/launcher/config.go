@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -30,7 +29,6 @@ import (
 	"github.com/Fantom-foundation/go-opera/integration/makefakegenesis"
 	"github.com/Fantom-foundation/go-opera/opera/genesis"
 	"github.com/Fantom-foundation/go-opera/opera/genesisstore"
-	"github.com/Fantom-foundation/go-opera/opera/genesisstore/fileszip"
 	futils "github.com/Fantom-foundation/go-opera/utils"
 	"github.com/Fantom-foundation/go-opera/vecmt"
 )
@@ -73,9 +71,9 @@ var (
 		Value: DefaultCacheSize,
 	}
 	// GenesisFlag specifies network genesis configuration
-	GenesisFlag = cli.StringSliceFlag{
+	GenesisFlag = cli.StringFlag{
 		Name:  "genesis",
-		Usage: "'path to genesis file(s)' - sets the network genesis configuration.",
+		Usage: "'path to genesis file' - sets the network genesis configuration.",
 	}
 	ExperimentalGenesisFlag = cli.BoolFlag{
 		Name:  "genesis.allowExperimental",
@@ -98,6 +96,13 @@ var (
 		Usage: `Blockchain sync mode ("full" or "snap")`,
 		Value: "full",
 	}
+
+	GCModeFlag = cli.StringFlag{
+		Name:  "gcmode",
+		Usage: `Blockchain garbage collection mode ("light", "full", "archive")`,
+		Value: "archive",
+	}
+
 	ExitWhenAgeFlag = cli.DurationFlag{
 		Name:  "exitwhensynced.age",
 		Usage: "Exits after synchronisation reaches the required age",
@@ -185,31 +190,13 @@ func mayGetGenesisStore(ctx *cli.Context) *genesisstore.Store {
 		}
 		return makefakegenesis.FakeGenesisStore(num, futils.ToFtm(1000000000), futils.ToFtm(5000000))
 	case ctx.GlobalIsSet(GenesisFlag.Name):
-		genesisPaths := ctx.GlobalStringSlice(GenesisFlag.Name)
-		var files []fileszip.Reader
-		var closers []io.Closer
+		genesisPath := ctx.GlobalString(GenesisFlag.Name)
 
-		for _, gPath := range genesisPaths {
-			f, err := os.Open(gPath)
-			if err != nil {
-				utils.Fatalf("Failed to open genesis file: %v", err)
-			}
-			fi, err := f.Stat()
-			if err != nil {
-				utils.Fatalf("Failed to stat genesis file: %v", err)
-			}
-			files = append(files, fileszip.Reader{
-				Reader: f,
-				Size:   fi.Size(),
-			})
-			closers = append(closers, f)
+		f, err := os.Open(genesisPath)
+		if err != nil {
+			utils.Fatalf("Failed to open genesis file: %v", err)
 		}
-		genesisStore, genesisHashes, err := genesisstore.OpenGenesisStore(files, func() error {
-			for _, cl := range closers {
-				_ = cl.Close()
-			}
-			return nil
-		})
+		genesisStore, genesisHashes, err := genesisstore.OpenGenesisStore(f)
 		if err != nil {
 			utils.Fatalf("Failed to read genesis file: %v", err)
 		}
@@ -339,10 +326,11 @@ func gossipConfigWithFlags(ctx *cli.Context, src gossip.Config) (gossip.Config, 
 func gossipStoreConfigWithFlags(ctx *cli.Context, src gossip.StoreConfig) (gossip.StoreConfig, error) {
 	cfg := src
 	if ctx.GlobalIsSet(utils.GCModeFlag.Name) {
-		if gcmode := ctx.GlobalString(utils.GCModeFlag.Name); gcmode != "full" && gcmode != "archive" {
-			utils.Fatalf("--%s must be either 'full' or 'archive'", utils.GCModeFlag.Name)
+		if gcmode := ctx.GlobalString(utils.GCModeFlag.Name); gcmode != "light" && gcmode != "full" && gcmode != "archive" {
+			utils.Fatalf("--%s must be 'light', 'full' or 'archive'", GCModeFlag.Name)
 		}
 		cfg.EVM.Cache.TrieDirtyDisabled = ctx.GlobalString(utils.GCModeFlag.Name) == "archive"
+		cfg.EVM.Cache.GreedyGC = ctx.GlobalString(utils.GCModeFlag.Name) == "full"
 	}
 	return cfg, nil
 }
@@ -387,8 +375,11 @@ func mayMakeAllConfigs(ctx *cli.Context) (*config, error) {
 	if ctx.GlobalIsSet(FakeNetFlag.Name) {
 		_, num, _ := parseFakeGen(ctx.GlobalString(FakeNetFlag.Name))
 		cfg.Emitter = emitter.FakeConfig(num)
+		setBootnodes(ctx, []string{}, &cfg.Node)
 	} else {
-		setBootnodes(ctx, Bootnodes, &cfg.Node)
+		// "asDefault" means set network defaults
+		cfg.Node.P2P.BootstrapNodes = asDefault
+		cfg.Node.P2P.BootstrapNodesV5 = asDefault
 	}
 
 	// Load config file (medium priority)

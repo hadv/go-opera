@@ -149,7 +149,7 @@ type Service struct {
 
 	procLogger *proclogger.Logger
 
-	stopped      bool
+	stopped   bool
 	haltCheck func(oldEpoch, newEpoch idx.Epoch, time time.Time) bool
 
 	tflusher PeriodicFlusher
@@ -202,19 +202,24 @@ func newService(config Config, store *Store, blockProc BlockProc, engine lachesi
 	svc.dagIndexer.Reset(svc.store.GetValidators(), es.table.DagIndex, func(id hash.Event) dag.Event {
 		return svc.store.GetEvent(id)
 	})
+
 	// load caches for mutable values to avoid race condition
 	svc.store.GetBlockEpochState()
 	svc.store.GetHighestLamport()
 	svc.store.GetLastBVs()
 	svc.store.GetLastEVs()
 	svc.store.GetLlrState()
+	svc.store.GetUpgradeHeights()
+	netVerStore := verwatcher.NewStore(store.table.NetworkVersion)
+	netVerStore.GetNetworkVersion()
+	netVerStore.GetMissedVersion()
 
 	// create GPO
-	svc.gpo = gasprice.NewOracle(&GPOBackend{store}, svc.config.GPO)
+	svc.gpo = gasprice.NewOracle(svc.config.GPO)
 
 	// create checkers
 	net := store.GetRules()
-	txSigner := gsignercache.Wrap(types.LatestSignerForChainID(net.EvmChainConfig().ChainID))
+	txSigner := gsignercache.Wrap(types.LatestSignerForChainID(new(big.Int).SetUint64(net.NetworkID)))
 	svc.heavyCheckReader.Store = store
 	svc.heavyCheckReader.Pubkeys.Store(readEpochPubKeys(svc.store, svc.store.GetEpoch()))                                          // read pub keys of current epoch from DB
 	svc.gasPowerCheckReader.Ctx.Store(NewGasPowerContext(svc.store, svc.store.GetValidators(), svc.store.GetEpoch(), net.Economy)) // read gaspower check data from DB
@@ -265,7 +270,7 @@ func newService(config Config, store *Store, blockProc BlockProc, engine lachesi
 	// create API backend
 	svc.EthAPI = &EthAPIBackend{config.ExtRPCEnabled, svc, stateReader, txSigner, config.AllowUnprotectedTxs}
 
-	svc.verWatcher = verwatcher.New(verwatcher.NewStore(store.table.NetworkVersion))
+	svc.verWatcher = verwatcher.New(netVerStore)
 	svc.tflusher = svc.makePeriodicFlusher()
 
 	return svc, nil
@@ -419,6 +424,7 @@ func (s *Service) APIs() []rpc.API {
 
 // Start method invoked when the node is ready to start the service.
 func (s *Service) Start() error {
+	s.gpo.Start(&GPOBackend{s.store, s.txpool})
 	// start tflusher before starting snapshots generation
 	s.tflusher.Start()
 	// start snapshots generation
@@ -476,6 +482,7 @@ func (s *Service) Stop() error {
 	s.handler.Stop()
 	s.feed.scope.Close()
 	s.eventMux.Stop()
+	s.gpo.Stop()
 	// it's safe to stop tflusher only before locking engineMu
 	s.tflusher.Stop()
 
@@ -486,7 +493,7 @@ func (s *Service) Stop() error {
 
 	s.blockProcWg.Wait()
 	close(s.blockProcTasksDone)
-	s.store.evm.Flush(s.store.GetBlockState(), s.store.GetBlock)
+	s.store.evm.Flush(s.store.GetBlockState())
 	return s.store.Commit()
 }
 

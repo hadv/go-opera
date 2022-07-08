@@ -47,7 +47,9 @@ func (s *Store) migrations() *migration.Migration {
 		Next("BlockState recovery", s.recoverBlockState).
 		Next("LlrState recovery", s.recoverLlrState).
 		Next("erase gossip-async db", s.eraseGossipAsyncDB).
-		Next("erase SFC API table", s.eraseSfcApiTable)
+		Next("erase SFC API table", s.eraseSfcApiTable).
+		Next("erase legacy genesis DB", s.eraseGenesisDB).
+		Next("calculate upgrade heights", s.calculateUpgradeHeights)
 }
 
 func unsupportedMigration() error {
@@ -391,5 +393,30 @@ func (s *Store) eraseGossipAsyncDB() error {
 	_ = asyncDB.Close()
 	asyncDB.Drop()
 
+	return nil
+}
+
+func (s *Store) eraseGenesisDB() error {
+	genesisDB, err := s.dbs.OpenDB("genesis")
+	if err != nil {
+		return nil
+	}
+
+	_ = genesisDB.Close()
+	genesisDB.Drop()
+	return nil
+}
+
+func (s *Store) calculateUpgradeHeights() error {
+	var prevEs *iblockproc.EpochState
+	s.ForEachHistoryBlockEpochState(func(bs iblockproc.BlockState, es iblockproc.EpochState) bool {
+		s.WriteUpgradeHeight(bs, es, prevEs)
+		prevEs = &es
+		return true
+	})
+	if prevEs == nil {
+		// special case when no history is available
+		s.WriteUpgradeHeight(s.GetBlockState(), s.GetEpochState(), nil)
+	}
 	return nil
 }

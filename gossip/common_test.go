@@ -201,6 +201,7 @@ func newTestEnv(firstEpoch idx.Epoch, validatorsNum idx.Validator) *testEnv {
 }
 
 func (env *testEnv) Close() {
+	env.verWatcher.Stop()
 	env.store.Close()
 	env.tflusher.Stop()
 }
@@ -453,7 +454,7 @@ func (env *testEnv) callContract(
 	// about the transaction and calling mechanisms.
 	txContext := evmcore.NewEVMTxContext(msg)
 	context := evmcore.NewEVMBlockContext(block.Header(), env.GetEvmStateReader(), nil)
-	vmenv := vm.NewEVM(context, txContext, state, env.store.GetRules().EvmChainConfig(), opera.DefaultVMConfig)
+	vmenv := vm.NewEVM(context, txContext, state, env.store.GetEvmChainConfig(), opera.DefaultVMConfig)
 	gaspool := new(evmcore.GasPool).AddGas(math.MaxUint64)
 	res, err := evmcore.NewStateTransition(vmenv, msg, gaspool).TransitionDb()
 

@@ -39,6 +39,7 @@ type Store struct {
 		Blocks                 kvdb.Store `table:"b"`
 		EpochBlocks            kvdb.Store `table:"P"`
 		Genesis                kvdb.Store `table:"g"`
+		UpgradeHeights         kvdb.Store `table:"U"`
 
 		// P2P-only
 		HighestLamport kvdb.Store `table:"l"`
@@ -73,10 +74,11 @@ type Store struct {
 		BlockEpochStateHistory *wlru.Cache  `cache:"-"` // store by pointer
 		BlockEpochState        atomic.Value // store by value
 		HighestLamport         atomic.Value // store by value
-		LastBVs                atomic.Value
-		LastEV                 atomic.Value
-		LlrState               atomic.Value
-		KvdbEvmSnap            atomic.Value
+		LastBVs                atomic.Value // store by pointer
+		LastEV                 atomic.Value // store by pointer
+		LlrState               atomic.Value // store by value
+		KvdbEvmSnap            atomic.Value // store by pointer
+		UpgradeHeights         atomic.Value // store by pointer
 	}
 
 	mutex struct {
@@ -171,7 +173,15 @@ func (s *Store) commitEVM(flush bool) {
 	if err != nil {
 		s.Log.Crit("Failed to commit EVM storage", "err", err)
 	}
-	s.evm.Cap(s.cfg.MaxNonFlushedSize/3, s.cfg.MaxNonFlushedSize/4)
+	s.evm.Cap()
+}
+
+func (s *Store) cleanCommitEVM() {
+	err := s.evm.CleanCommit(s.GetBlockState())
+	if err != nil {
+		s.Log.Crit("Failed to commit EVM storage", "err", err)
+	}
+	s.evm.Cap()
 }
 
 func (s *Store) GenerateSnapshotAt(root common.Hash, async bool) (err error) {

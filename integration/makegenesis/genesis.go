@@ -24,6 +24,7 @@ import (
 	"github.com/Fantom-foundation/go-opera/inter/iblockproc"
 	"github.com/Fantom-foundation/go-opera/inter/ibr"
 	"github.com/Fantom-foundation/go-opera/inter/ier"
+	"github.com/Fantom-foundation/go-opera/opera"
 	"github.com/Fantom-foundation/go-opera/opera/genesis"
 	"github.com/Fantom-foundation/go-opera/opera/genesisstore"
 	"github.com/Fantom-foundation/go-opera/utils/iodb"
@@ -140,7 +141,12 @@ func (b *GenesisBuilder) ExecuteGenesisTxs(blockProc BlockProc, genesisTxs types
 	txListener := blockProc.TxListenerModule.Start(blockCtx, bs, es, b.tmpStateDB)
 	evmProcessor := blockProc.EVMModule.Start(blockCtx, b.tmpStateDB, dummyHeaderReturner{}, func(l *types.Log) {
 		txListener.OnNewLog(l)
-	}, es.Rules)
+	}, es.Rules, es.Rules.EvmChainConfig([]opera.UpgradeHeight{
+		{
+			Upgrades: es.Rules.Upgrades,
+			Height:   0,
+		},
+	}))
 
 	// Execute genesis transactions
 	evmProcessor.Execute(genesisTxs)
@@ -225,7 +231,7 @@ func (f *memFile) Close() error {
 }
 
 func (b *GenesisBuilder) Build(head genesis.Header) *genesisstore.Store {
-	return genesisstore.NewStore(func(name string) (io.ReadCloser, error) {
+	return genesisstore.NewStore(func(name string) (io.Reader, error) {
 		buf := &memFile{bytes.NewBuffer(nil)}
 		if name == genesisstore.BlocksSection {
 			for i := len(b.blocks) - 1; i >= 0; i-- {
