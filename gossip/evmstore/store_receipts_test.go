@@ -1,4 +1,4 @@
-package evmstore
+package evmstore_test
 
 import (
 	"testing"
@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/Fantom-foundation/go-opera/gossip/evmstore"
 	"github.com/Fantom-foundation/go-opera/logger"
 )
 
@@ -53,7 +54,7 @@ func BenchmarkStoreGetRawReceipts(b *testing.B) {
 	})
 }
 
-func benchStoreGetRawReceipts(b *testing.B, store *Store) {
+func benchStoreGetRawReceipts(b *testing.B, store *evmstore.Store) {
 	block, receipt := fakeReceipts()
 
 	store.SetRawReceipts(block, receipt)
@@ -77,7 +78,7 @@ func BenchmarkStoreSetRawReceipts(b *testing.B) {
 	})
 }
 
-func benchStoreSetRawReceipts(b *testing.B, store *Store) {
+func benchStoreSetRawReceipts(b *testing.B, store *evmstore.Store) {
 	block, receipt := fakeReceipts()
 
 	for i := 0; i < b.N; i++ {
