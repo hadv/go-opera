@@ -41,21 +41,39 @@ func nonCachedStore() *evmstore.Store {
 	return evmstore.NewStore(memorydb.NewProducer(""), cfg)
 }
 
-func newStore(chainDir string) *evmstore.Store {
+func newStore(chainDir string, cc integration.DBsCacheConfig, dc integration.DBsConfig) *evmstore.Store {
 	cfg := evmstore.LiteStoreConfig()
 	integration.MakeDBDirs(chainDir)
-	genesisProducers, _ := integration.SupportedDBs(chainDir, integration.Ldb1RuntimeDBsCacheConfig(cachescale.Identity.U64, uint64(utils.MakeDatabaseHandles())))
-
-	dbDefault := integration.DefaultDBsConfig(cachescale.Identity.U64, uint64(utils.MakeDatabaseHandles()))
-	dbs, _ := integration.MakeDirectMultiProducer(genesisProducers, dbDefault.Routing)
+	genesisProducers, _ := integration.SupportedDBs(chainDir, cc)
+	dbs, _ := integration.MakeDirectMultiProducer(genesisProducers, dc.Routing)
 	return evmstore.NewStore(dbs, cfg)
 }
 
 func TestEvmStore(t *testing.T) {
+	t.Run("leveldb", func(t *testing.T) {
+		testEvmStore(t, integration.Ldb1RuntimeDBsCacheConfig(cachescale.Identity.U64, uint64(utils.MakeDatabaseHandles())), integration.DefaultDBsConfig(cachescale.Identity.U64, uint64(utils.MakeDatabaseHandles())))
+	})
+
+	// t.Run("pebble", func(t *testing.T) {
+	// 	testEvmStore(t, integration.Pbl1RuntimeDBsCacheConfig(cachescale.Identity.U64, uint64(utils.MakeDatabaseHandles())), integration.Pbl1DBsConfig(cachescale.Identity.U64, uint64(utils.MakeDatabaseHandles())))
+	// })
+}
+
+func TestEvmStoreWithBatch(t *testing.T) {
+	t.Run("leveldb", func(t *testing.T) {
+		testEvmStoreWithBatch(t, integration.Ldb1RuntimeDBsCacheConfig(cachescale.Identity.U64, uint64(utils.MakeDatabaseHandles())), integration.DefaultDBsConfig(cachescale.Identity.U64, uint64(utils.MakeDatabaseHandles())))
+	})
+
+	// t.Run("pebble", func(t *testing.T) {
+	// 	testEvmStoreWithBatch(t, integration.Pbl1RuntimeDBsCacheConfig(cachescale.Identity.U64, uint64(utils.MakeDatabaseHandles())), integration.Pbl1DBsConfig(cachescale.Identity.U64, uint64(utils.MakeDatabaseHandles())))
+	// })
+}
+
+func testEvmStore(t *testing.T, cc integration.DBsCacheConfig, dc integration.DBsConfig) {
 	chainDir, _ := ioutil.TempDir("", "evmstore")
 	defer os.RemoveAll(chainDir)
-	store := newStore(chainDir)
-	data := bytes.Repeat([]byte(FILE_CONTENT), 30000)
+	store := newStore(chainDir, cc, dc)
+	data := bytes.Repeat([]byte(FILE_CONTENT), 22000)
 	for i := 0; i < 100; i++ {
 		store.EvmDb.Put([]byte(fmt.Sprintf("test%d", i)), data)
 	}
@@ -93,13 +111,13 @@ func TestEvmStore(t *testing.T) {
 	require.Equal(t, cp4, cp5)
 }
 
-func TestEvmStoreWithBatch(t *testing.T) {
+func testEvmStoreWithBatch(t *testing.T, cc integration.DBsCacheConfig, dc integration.DBsConfig) {
 	chainDir, _ := ioutil.TempDir("", "evmstore")
 	defer os.RemoveAll(chainDir)
-	store := newStore(chainDir)
+	store := newStore(chainDir, cc, dc)
 	batch := store.EvmDb.NewBatch()
 	defer batch.Reset()
-	data := bytes.Repeat([]byte(FILE_CONTENT), 30000)
+	data := bytes.Repeat([]byte(FILE_CONTENT), 22000)
 	for i := 0; i < 100; i++ {
 		batch.Put([]byte(fmt.Sprintf("test%d", i)), data)
 		if batch.ValueSize() > kvdb.IdealBatchSize {
