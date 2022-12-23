@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/protocols/snap"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/hashicorp/golang-lru/simplelru"
@@ -122,6 +123,7 @@ func (p *peer) GetBroadcastMetric() float64 {
 	defer p.Unlock()
 
 	if rate, ok := p.cache.Get(p.progress.Epoch); ok {
+		log.Info("cache hit", "rate", rate.(float64))
 		return rate.(float64)
 	}
 	chosen := p.progress.Epoch - lastEpochNums

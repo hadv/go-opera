@@ -856,7 +856,7 @@ func (h *handler) handle(p *peer) error {
 	// Handle incoming messages until the connection is torn down
 	for {
 		if err := h.handleMsg(p); err != nil {
-			p.Log().Debug("Message handling failed", "err", err)
+			p.Log().Warn("Message handling failed", "err", err)
 			return err
 		}
 	}
