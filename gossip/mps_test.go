@@ -100,9 +100,13 @@ func TestMisbehaviourProofsEventsDoublesign(t *testing.T) {
 		copy(correctMp.EventsDoublesign.Pair[i].Sig[:], sig)
 	}
 
+	print("correctMp: ")
+	println(int(correctMp.EventsDoublesign.Pair[0].Locator.Epoch))
 	tooLateMp := copyMP(correctMp)
-	tooLateMp.EventsDoublesign.Pair[0].Locator.Epoch = 1
-	tooLateMp.EventsDoublesign.Pair[1].Locator.Epoch = 1
+	tooLateMp.EventsDoublesign.Pair[0].Locator.Epoch = 0
+	tooLateMp.EventsDoublesign.Pair[1].Locator.Epoch = 0
+	print("tooLateMp: ")
+	println(int(tooLateMp.EventsDoublesign.Pair[0].Locator.Epoch))
 	err = env.ApplyMPs(nextEpoch, tooLateMp)
 	require.ErrorIs(err, basiccheck.ErrMPTooLate)
 
@@ -243,7 +247,7 @@ func TestMisbehaviourProofsBlockVoteDoublesign(t *testing.T) {
 
 	for i := range correctMp.BlockVoteDoublesign.Pair {
 		tooLateMp := copyMP(correctMp)
-		tooLateMp.BlockVoteDoublesign.Pair[i].Val.Epoch = 1
+		tooLateMp.BlockVoteDoublesign.Pair[i].Val.Epoch = 0
 		err = env.ApplyMPs(nextEpoch, tooLateMp)
 		require.ErrorIs(err, basiccheck.ErrMPTooLate)
 	}

@@ -29,6 +29,8 @@ func (s *Helper) Get(table kvdb.Store, key []byte, to interface{}) interface{} {
 		s.Log.Crit("Failed to get key-value", "err", err)
 	}
 	if buf == nil {
+		print("key not found")
+		println(string(key))
 		return nil
 	}
 

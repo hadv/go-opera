@@ -277,6 +277,9 @@ func (v *Checker) validateBVs(eventEpoch idx.Epoch, bvs inter.LlrBlockVotes, gre
 
 func (v *Checker) validateEV(eventEpoch idx.Epoch, ev inter.LlrEpochVote, greedy bool) error {
 	if ev.Epoch > eventEpoch {
+		print("ev.Epoch vs. eventEpoch")
+		println(ev.Epoch)
+		println(eventEpoch)
 		return FutureEVEpoch
 	}
 	if (ev.Epoch == 0) != (ev.Vote == hash.Zero) {

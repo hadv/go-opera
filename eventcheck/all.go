@@ -37,6 +37,7 @@ func (v *Checkers) Validate(e inter.EventPayloadI, parents inter.EventIs) error 
 		return err
 	}
 	if err := v.Heavycheck.ValidateEvent(e); err != nil {
+		println(err)
 		return err
 	}
 	return nil

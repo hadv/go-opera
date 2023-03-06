@@ -169,6 +169,7 @@ func GetFakeValidators(num idx.Validator) gpos.Validators {
 	for i := idx.ValidatorID(1); i <= idx.ValidatorID(num); i++ {
 		key := FakeKey(i)
 		addr := crypto.PubkeyToAddress(key.PublicKey)
+		println("addr:" + addr.Hex())
 		pubkeyraw := crypto.FromECDSAPub(&key.PublicKey)
 		validators = append(validators, gpos.Validator{
 			ID:      i,

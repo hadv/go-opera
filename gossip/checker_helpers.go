@@ -104,8 +104,11 @@ func (r *HeavyCheckReader) GetEpochBlockStart(epoch idx.Epoch) idx.Block {
 
 // readEpochPubKeys reads epoch pubkeys
 func readEpochPubKeys(s *Store, epoch idx.Epoch) *ValidatorsPubKeys {
+	print("string(epoch.Bytes()): ")
+	println(int(epoch))
 	es := s.GetHistoryEpochState(epoch)
 	if es == nil {
+		println("es is nil")
 		return nil
 	}
 	var pubkeys = make(map[idx.ValidatorID]validatorpk.PubKey, len(es.ValidatorProfiles))
