@@ -12,7 +12,7 @@ require (
 	github.com/deckarep/golang-set v1.7.1
 	github.com/docker/docker v1.13.1
 	github.com/dvyukov/go-fuzz v0.0.0-20201127111758-49e582c6c23d
-	github.com/ethereum/go-ethereum v1.11.5
+	github.com/ethereum/go-ethereum v1.13.0
 	github.com/evalphobia/logrus_sentry v0.8.2
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08 // indirect
@@ -34,8 +34,8 @@ require (
 	github.com/uber/jaeger-client-go v2.20.1+incompatible
 	github.com/uber/jaeger-lib v2.2.0+incompatible
 	go.uber.org/atomic v1.5.1 // indirect
-	golang.org/x/crypto v0.9.0
-	golang.org/x/sys v0.9.0
+	golang.org/x/crypto v0.12.0
+	golang.org/x/sys v0.11.0
 	golang.org/x/tools v0.9.1 // indirect
 )
 
@@ -53,7 +53,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cockroachdb/errors v1.9.1 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
-	github.com/cockroachdb/pebble v0.0.0-20230209160836-829675f94811 // indirect
+	github.com/cockroachdb/pebble v0.0.0-20230906160148-46873a6a7a06 // indirect
 	github.com/cockroachdb/redact v1.1.3 // indirect
 	github.com/consensys/bavard v0.1.13 // indirect
 	github.com/consensys/gnark-crypto v0.10.0 // indirect
@@ -117,7 +117,7 @@ require (
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/text v0.12.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
@@ -127,7 +127,7 @@ require (
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
-replace github.com/Fantom-foundation/lachesis-base => github.com/hadv/lachesis-base v1.11.5-rc1
+replace github.com/Fantom-foundation/lachesis-base => github.com/hadv/lachesis-base v1.13.0
 
 replace github.com/ethereum/go-ethereum => github.com/hadv/go-ethereum v1.13.0-rc.4
 
